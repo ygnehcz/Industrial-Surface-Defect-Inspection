@@ -6,8 +6,8 @@ goal is to develop a portfolio-grade pipeline that covers the full defect
 inspection workflow — from data understanding and classical baselines through
 deep-learning segmentation to evaluation and interactive visualisation.
 
-> **Current status:** first U-Net baseline training and validation analysis completed.
-> Further optimisation and final test-set evaluation are still pending.
+> **Current status:** baseline U-Net training and validation error analysis completed.
+> Further optimisation, final test-set evaluation, and deployment work are still pending.
 
 ## Planned Pipeline
 
@@ -25,6 +25,9 @@ deep-learning segmentation to evaluation and interactive visualisation.
 | Training pipeline             | Train/validation loop, checkpoint saving, and baseline U-Net optimisation | Done       |
 | Prediction visualisation      | Qualitative panels for validation-set defect predictions  | Done       |
 | Threshold sweep analysis      | Validation-set threshold comparison for Dice/IoU/precision/recall trade-offs | Done       |
+| Per-sample validation analysis | Ranking defective validation samples by Dice and visualising best/median/worst cases | Done       |
+| Area-performance analysis     | Relating GT defect area to Dice/Recall behaviour across validation samples | Done       |
+| Boundary-performance analysis | Comparing boundary-touching and non-boundary defect segmentation quality | Done       |
 | Evaluation & error analysis   | Metrics (IoU, Dice), confusion matrices, per-sample QA   | Planned    |
 | Interactive demo              | Web-based or CLI demo for live inference on user images  | Planned    |
 
@@ -125,17 +128,17 @@ handling for missing directories, unreadable files, and insufficient samples.
 - `train.py` has been implemented.
 - It combines the processed dataset, U-Net, BCE-Dice loss, validation
   metrics, and best-checkpoint saving.
-- The first baseline run used:
-  - 5 epochs
+- The current follow-up baseline run used:
+  - 20 epochs
   - batch size 2
   - learning rate 1e-3
   - Adam optimiser
   - validation checkpointing by Dice score
-- The best checkpoint was saved at epoch 4 with:
-  - Val Dice: `0.3047`
-  - Val IoU: `0.1797`
-  - Val Precision: `0.4321`
-  - Val Recall: `0.2353`
+- The best checkpoint was saved at epoch 1 with:
+  - Val Dice: `0.4540`
+  - Val IoU: `0.2936`
+  - Val Precision: `0.6755`
+  - Val Recall: `0.3418`
 
 ### Prediction Visualisation
 
@@ -154,18 +157,65 @@ handling for missing directories, unreadable files, and insufficient samples.
 - `scripts/evaluate_thresholds.py` has been implemented.
 - It evaluates thresholds `0.1` to `0.7` on the full validation split using
   globally accumulated TP/FP/FN counts.
-- The current best validation Dice is achieved at threshold `0.7`:
+- The current best validation Dice is achieved at threshold `0.5`:
 
   | Threshold | Dice   | IoU    | Precision | Recall |
   |-----------|--------|--------|-----------|--------|
-  | 0.50      | 0.3047 | 0.1797 | 0.4321    | 0.2353 |
-  | 0.60      | 0.3133 | 0.1857 | 0.5023    | 0.2276 |
-  | 0.70      | 0.3198 | 0.1903 | 0.5908    | 0.2192 |
+  | 0.40      | 0.4530 | 0.2928 | 0.6521    | 0.3470 |
+  | 0.50      | 0.4540 | 0.2936 | 0.6755    | 0.3418 |
+  | 0.60      | 0.4539 | 0.2936 | 0.6965    | 0.3367 |
+  | 0.70      | 0.4536 | 0.2933 | 0.7182    | 0.3314 |
 
-- This indicates that low-confidence predictions currently introduce more
-  false positives than useful defect coverage.  Further optimisation should
-  focus on improving model quality and recall rather than simply lowering
-  the threshold.
+- The current checkpoint is relatively stable across thresholds 0.4–0.7,
+  with the best Dice obtained at threshold 0.5.  Increasing the threshold
+  improves precision while gradually reducing recall, indicating a normal
+  precision-recall trade-off rather than a need for threshold relaxation.
+
+### Per-sample Validation Analysis
+
+- `scripts/analyze_validation_samples.py` has been implemented.
+- It evaluates all 49 defective validation samples individually, saves a
+  CSV metrics table, and produces best/median/worst prediction panels.
+- Current defective-sample statistics:
+  - Best sample Dice: `0.9320`
+  - Worst sample Dice: `0.0000`
+  - Mean sample Dice: `0.4878`
+  - Median sample Dice: `0.6524`
+- This shows that the model already segments many defect samples well, but
+  a subset of difficult cases is still completely missed.
+
+### Area vs. Performance Analysis
+
+- `scripts/analyze_area_vs_performance.py` has been implemented.
+- It groups defective validation samples by GT defect area and compares
+  segmentation quality.
+- Summary table:
+
+  | Group  | GT Pixel Range | Mean Dice | Median Dice | Mean Recall |
+  |--------|----------------|-----------|-------------|-------------|
+  | Small  | 110–1249       | 0.4411    | 0.6524      | 0.4741      |
+  | Medium | 1346–4179      | 0.6736    | 0.8038      | 0.6819      |
+  | Large  | 4307–35464     | 0.3516    | 0.1139      | 0.3342      |
+
+- The baseline performs most consistently on medium-sized defects.
+  Large-area defects show the weakest median Dice and the strongest
+  performance dispersion, indicating that defect area alone is not a
+  monotonic predictor of segmentation quality.
+
+### Boundary vs. Performance Analysis
+
+- `scripts/analyze_boundary_vs_performance.py` has been implemented.
+- It compares boundary-touching defect samples with non-boundary defects.
+- Summary table:
+
+  | Group              | Count | Mean Dice | Median Dice | Mean Precision | Mean Recall |
+  |--------------------|-------|-----------|-------------|----------------|-------------|
+  | Boundary-touching  | 24    | 0.4485    | 0.4836      | 0.6975         | 0.4328      |
+  | Non-boundary       | 25    | 0.5256    | 0.6587      | 0.6789         | 0.5572      |
+
+- Boundary-touching defects show lower median Dice and lower mean Recall,
+  suggesting that border-adjacent defects are one important failure mode
+  of the current baseline.
 
 ## Preliminary Data Findings
 
@@ -221,7 +271,10 @@ handling for missing directories, unreadable files, and insufficient samples.
 │   ├── prepare_dataset.py
 │   ├── inspect_processed_shapes.py
 │   ├── visualize_predictions.py
-│   └── evaluate_thresholds.py
+│   ├── evaluate_thresholds.py
+│   ├── analyze_validation_samples.py
+│   ├── analyze_area_vs_performance.py
+│   └── analyze_boundary_vs_performance.py
 ├── utils/                 # Evaluation utilities
 │   └── metrics.py
 ├── requirements.txt
@@ -272,6 +325,15 @@ python scripts/visualize_predictions.py
 
 # Sweep validation thresholds
 python scripts/evaluate_thresholds.py
+
+# Analyse per-sample validation performance
+python scripts/analyze_validation_samples.py
+
+# Analyse defect area versus validation performance
+python scripts/analyze_area_vs_performance.py
+
+# Compare boundary-touching and non-boundary defects
+python scripts/analyze_boundary_vs_performance.py
 ```
 
 Output figures are written under `outputs/figures/`.
