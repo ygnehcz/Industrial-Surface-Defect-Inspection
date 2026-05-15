@@ -21,6 +21,7 @@ deep-learning segmentation to evaluation and interactive visualisation.
 | Classical CV baseline         | Traditional image-processing defect-detection pipeline   | Planned    |
 | U-Net segmentation model      | Baseline encoder-decoder segmentation network with skip connections | Done       |
 | Segmentation losses           | Dice loss and combined BCE-Dice loss for binary defect segmentation | Done       |
+| Segmentation metrics          | Dice, IoU, pixel precision, and pixel recall for binary defect segmentation | Done       |
 | Evaluation & error analysis   | Metrics (IoU, Dice), confusion matrices, per-sample QA   | Planned    |
 | Interactive demo              | Web-based or CLI demo for live inference on user images  | Planned    |
 
@@ -101,6 +102,21 @@ handling for missing directories, unreadable files, and insufficient samples.
 - A self-test has confirmed that both loss functions run successfully on
   tensors shaped `[B, 1, 640, 256]`.
 
+### Segmentation Metrics
+
+- `utils/metrics.py` has been implemented.
+- It provides pixel-level binary segmentation metrics:
+  - Dice score
+  - IoU
+  - Precision
+  - Recall
+- Raw logits are first converted to probabilities with sigmoid, then
+  thresholded into binary predictions.
+- The metrics are computed from aggregated TP, FP, and FN counts across the
+  batch.
+- A self-test has confirmed that the metrics run successfully on tensors
+  shaped `[B, 1, 640, 256]`.
+
 ## Preliminary Data Findings
 
 - **Class imbalance** — normal samples outnumber defective samples roughly
@@ -153,7 +169,8 @@ handling for missing directories, unreadable files, and insufficient samples.
 │   ├── analyze_defect_area.py
 │   ├── prepare_dataset.py
 │   └── inspect_processed_shapes.py
-├── utils/                 # Future: utility helpers
+├── utils/                 # Evaluation utilities
+│   └── metrics.py
 ├── requirements.txt
 └── README.md
 ```
@@ -190,6 +207,9 @@ python models/unet.py
 
 # Run segmentation-loss self-test
 python losses/segmentation_loss.py
+
+# Run segmentation-metrics self-test
+python utils/metrics.py
 ```
 
 Output figures are written under `outputs/figures/`.
