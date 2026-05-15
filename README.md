@@ -6,8 +6,8 @@ goal is to develop a portfolio-grade pipeline that covers the full defect
 inspection workflow — from data understanding and classical baselines through
 deep-learning segmentation to evaluation and interactive visualisation.
 
-> **Current status:** baseline U-Net training and validation error analysis completed.
-> Further optimisation, final test-set evaluation, and deployment work are still pending.
+> **Current status:** baseline U-Net training, validation error analysis, and fixed-threshold test-set evaluation completed.
+> Further optimisation and deployment work are still pending.
 
 ## Planned Pipeline
 
@@ -28,7 +28,7 @@ deep-learning segmentation to evaluation and interactive visualisation.
 | Per-sample validation analysis | Ranking defective validation samples by Dice and visualising best/median/worst cases | Done       |
 | Area-performance analysis     | Relating GT defect area to Dice/Recall behaviour across validation samples | Done       |
 | Boundary-performance analysis | Comparing boundary-touching and non-boundary defect segmentation quality | Done       |
-| Evaluation & error analysis   | Metrics (IoU, Dice), confusion matrices, per-sample QA   | Planned    |
+| Test-set evaluation           | Fixed-threshold final evaluation on the official test split | Done       |
 | Interactive demo              | Web-based or CLI demo for live inference on user images  | Planned    |
 
 ## Dataset Overview
@@ -220,6 +220,27 @@ handling for missing directories, unreadable files, and insufficient samples.
   especially in recall, but the performance gap narrows substantially after
   learning-rate optimisation.
 
+### Final Test-set Evaluation
+
+- `scripts/evaluate_test_set.py` has been implemented.
+- The official test split is evaluated once using the selected best
+  checkpoint and the validation-selected fixed threshold `0.7`.
+- Test split composition:
+  - Total samples: `1004`
+  - Defective samples: `110`
+  - Normal samples: `894`
+- Final test-set metrics:
+
+  | Metric    | Value  |
+  |-----------|--------|
+  | Dice      | 0.5486 |
+  | IoU       | 0.3780 |
+  | Precision | 0.5480 |
+  | Recall    | 0.5492 |
+
+- The test-set precision and recall are closely balanced, and the final Dice
+  exceeds the validation Dice obtained during threshold selection.
+
 ## Preliminary Data Findings
 
 - **Class imbalance** — normal samples outnumber defective samples roughly
@@ -277,7 +298,8 @@ handling for missing directories, unreadable files, and insufficient samples.
 │   ├── evaluate_thresholds.py
 │   ├── analyze_validation_samples.py
 │   ├── analyze_area_vs_performance.py
-│   └── analyze_boundary_vs_performance.py
+│   ├── analyze_boundary_vs_performance.py
+│   └── evaluate_test_set.py
 ├── utils/                 # Evaluation utilities
 │   └── metrics.py
 ├── requirements.txt
@@ -337,6 +359,9 @@ python scripts/analyze_area_vs_performance.py
 
 # Compare boundary-touching and non-boundary defects
 python scripts/analyze_boundary_vs_performance.py
+
+# Evaluate the selected checkpoint once on the official test split
+python scripts/evaluate_test_set.py
 ```
 
 Output figures are written under `outputs/figures/`.
