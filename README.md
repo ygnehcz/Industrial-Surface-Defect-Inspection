@@ -241,6 +241,33 @@ handling for missing directories, unreadable files, and insufficient samples.
 - The test-set precision and recall are closely balanced, and the final Dice
   exceeds the validation Dice obtained during threshold selection.
 
+### Qualitative Test-set Examples
+
+- The following examples visualise predictions from the selected best
+  checkpoint on the official test split using threshold `0.7`.
+- Each panel shows the original image, GT mask, predicted mask, and red
+  prediction overlay.
+- These examples illustrate representative successful cases, including
+  compact defect regions, elongated defects, and a boundary-adjacent defect.
+
+![Test prediction example 20099](docs/assets/test_predictions/20099_test_prediction_panel.png)
+
+![Test prediction example 20084](docs/assets/test_predictions/20084_test_prediction_panel.png)
+
+![Test prediction example 20056](docs/assets/test_predictions/20056_test_prediction_panel.png)
+
+### Representative Failure Cases
+
+- The model still has limitations on some difficult test samples.
+- The first example shows clear over-segmentation, where predicted regions
+  extend substantially beyond the labelled GT area.
+- The second example shows under-segmentation, where only a small portion
+  of the labelled defect is recovered.
+
+![Test failure example 20042](docs/assets/test_predictions/20042_test_prediction_panel.png)
+
+![Test failure example 20095](docs/assets/test_predictions/20095_test_prediction_panel.png)
+
 ## Preliminary Data Findings
 
 - **Class imbalance** — normal samples outnumber defective samples roughly
@@ -299,6 +326,7 @@ handling for missing directories, unreadable files, and insufficient samples.
 │   ├── analyze_validation_samples.py
 │   ├── analyze_area_vs_performance.py
 │   ├── analyze_boundary_vs_performance.py
+│   ├── visualize_test_predictions.py
 │   └── evaluate_test_set.py
 ├── utils/                 # Evaluation utilities
 │   └── metrics.py
@@ -362,6 +390,9 @@ python scripts/analyze_boundary_vs_performance.py
 
 # Evaluate the selected checkpoint once on the official test split
 python scripts/evaluate_test_set.py
+
+# Visualise qualitative predictions on selected defective test samples
+python scripts/visualize_test_predictions.py
 ```
 
 Output figures are written under `outputs/figures/`.
