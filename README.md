@@ -128,17 +128,19 @@ handling for missing directories, unreadable files, and insufficient samples.
 - `train.py` has been implemented.
 - It combines the processed dataset, U-Net, BCE-Dice loss, validation
   metrics, and best-checkpoint saving.
-- The current follow-up baseline run used:
+- The current optimised baseline run used:
   - 20 epochs
   - batch size 2
-  - learning rate 1e-3
+  - learning rate 3e-4
   - Adam optimiser
   - validation checkpointing by Dice score
-- The best checkpoint was saved at epoch 1 with:
-  - Val Dice: `0.4540`
-  - Val IoU: `0.2936`
-  - Val Precision: `0.6755`
-  - Val Recall: `0.3418`
+- The best checkpoint was saved at epoch 14 with:
+  - Val Dice: `0.4934`
+  - Val IoU: `0.3275`
+  - Val Precision: `0.4208`
+  - Val Recall: `0.5964`
+- After threshold sweeping, the best validation Dice improves further to
+  `0.5016` at threshold `0.7`.
 
 ### Prediction Visualisation
 
@@ -157,19 +159,19 @@ handling for missing directories, unreadable files, and insufficient samples.
 - `scripts/evaluate_thresholds.py` has been implemented.
 - It evaluates thresholds `0.1` to `0.7` on the full validation split using
   globally accumulated TP/FP/FN counts.
-- The current best validation Dice is achieved at threshold `0.5`:
+- The current best validation Dice is achieved at threshold `0.7`:
 
   | Threshold | Dice   | IoU    | Precision | Recall |
   |-----------|--------|--------|-----------|--------|
-  | 0.40      | 0.4530 | 0.2928 | 0.6521    | 0.3470 |
-  | 0.50      | 0.4540 | 0.2936 | 0.6755    | 0.3418 |
-  | 0.60      | 0.4539 | 0.2936 | 0.6965    | 0.3367 |
-  | 0.70      | 0.4536 | 0.2933 | 0.7182    | 0.3314 |
+  | 0.40      | 0.4896 | 0.3241 | 0.4093    | 0.6089 |
+  | 0.50      | 0.4934 | 0.3275 | 0.4208    | 0.5964 |
+  | 0.60      | 0.4970 | 0.3307 | 0.4327    | 0.5837 |
+  | 0.70      | 0.5016 | 0.3347 | 0.4486    | 0.5687 |
 
-- The current checkpoint is relatively stable across thresholds 0.4–0.7,
-  with the best Dice obtained at threshold 0.5.  Increasing the threshold
-  improves precision while gradually reducing recall, indicating a normal
-  precision-recall trade-off rather than a need for threshold relaxation.
+- The current optimised checkpoint improves steadily across thresholds 0.4–0.7,
+  with the best Dice obtained at threshold 0.7.  Increasing the threshold
+  raises precision while gradually reducing recall, and the `0.7` setting
+  provides the strongest Dice/IoU balance for the current model.
 
 ### Per-sample Validation Analysis
 
@@ -177,12 +179,13 @@ handling for missing directories, unreadable files, and insufficient samples.
 - It evaluates all 49 defective validation samples individually, saves a
   CSV metrics table, and produces best/median/worst prediction panels.
 - Current defective-sample statistics:
-  - Best sample Dice: `0.9320`
+  - Best sample Dice: `0.9335`
   - Worst sample Dice: `0.0000`
-  - Mean sample Dice: `0.4878`
-  - Median sample Dice: `0.6524`
-- This shows that the model already segments many defect samples well, but
-  a subset of difficult cases is still completely missed.
+  - Mean sample Dice: `0.6237`
+  - Median sample Dice: `0.7194`
+- This shows that the optimised model segments a substantial share of defect
+  samples well, although a small subset of difficult cases is still
+  completely missed.
 
 ### Area vs. Performance Analysis
 
@@ -193,14 +196,14 @@ handling for missing directories, unreadable files, and insufficient samples.
 
   | Group  | GT Pixel Range | Mean Dice | Median Dice | Mean Recall |
   |--------|----------------|-----------|-------------|-------------|
-  | Small  | 110–1249       | 0.4411    | 0.6524      | 0.4741      |
-  | Medium | 1346–4179      | 0.6736    | 0.8038      | 0.6819      |
-  | Large  | 4307–35464     | 0.3516    | 0.1139      | 0.3342      |
+  | Small  | 110–1249       | 0.5940    | 0.5993      | 0.7469      |
+  | Medium | 1346–4179      | 0.6866    | 0.7662      | 0.8299      |
+  | Large  | 4307–35464     | 0.5923    | 0.7078      | 0.5604      |
 
-- The baseline performs most consistently on medium-sized defects.
-  Large-area defects show the weakest median Dice and the strongest
-  performance dispersion, indicating that defect area alone is not a
-  monotonic predictor of segmentation quality.
+- The optimised baseline still performs best on medium-sized defects, but
+  small- and large-area groups both improve substantially.  Large-area defects
+  no longer show the severe collapse observed in the earlier baseline, although
+  their recall remains lower than that of medium-sized defects.
 
 ### Boundary vs. Performance Analysis
 
@@ -210,12 +213,12 @@ handling for missing directories, unreadable files, and insufficient samples.
 
   | Group              | Count | Mean Dice | Median Dice | Mean Precision | Mean Recall |
   |--------------------|-------|-----------|-------------|----------------|-------------|
-  | Boundary-touching  | 24    | 0.4485    | 0.4836      | 0.6975         | 0.4328      |
-  | Non-boundary       | 25    | 0.5256    | 0.6587      | 0.6789         | 0.5572      |
+  | Boundary-touching  | 24    | 0.5999    | 0.7183      | 0.7252         | 0.6413      |
+  | Non-boundary       | 25    | 0.6465    | 0.7486      | 0.6905         | 0.7821      |
 
-- Boundary-touching defects show lower median Dice and lower mean Recall,
-  suggesting that border-adjacent defects are one important failure mode
-  of the current baseline.
+- Boundary-touching defects remain somewhat harder than non-boundary defects,
+  especially in recall, but the performance gap narrows substantially after
+  learning-rate optimisation.
 
 ## Preliminary Data Findings
 
@@ -321,13 +324,13 @@ python utils/metrics.py
 python train.py
 
 # Visualise validation predictions from the best checkpoint
-python scripts/visualize_predictions.py
+python scripts/visualize_predictions.py --threshold 0.7
 
 # Sweep validation thresholds
 python scripts/evaluate_thresholds.py
 
 # Analyse per-sample validation performance
-python scripts/analyze_validation_samples.py
+python scripts/analyze_validation_samples.py --threshold 0.7
 
 # Analyse defect area versus validation performance
 python scripts/analyze_area_vs_performance.py
