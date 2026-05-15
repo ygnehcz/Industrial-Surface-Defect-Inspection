@@ -6,8 +6,8 @@ goal is to develop a portfolio-grade pipeline that covers the full defect
 inspection workflow — from data understanding and classical baselines through
 deep-learning segmentation to evaluation and interactive visualisation.
 
-> **Current status:** data understanding & analysis phase. No models have been
-> trained yet.
+> **Current status:** data preparation and PyTorch input pipeline completed.
+> Model training has not started yet.
 
 ## Planned Pipeline
 
@@ -17,6 +17,7 @@ deep-learning segmentation to evaluation and interactive visualisation.
 | Defect sample visualisation   | Triplet figures (original, GT mask, overlay)             | Done       |
 | Defect area analysis          | Pixel-level defect distribution & histograms             | Done       |
 | Dataset preparation           | Stratified train/val split & processed directory layout  | Done       |
+| PyTorch dataset loader        | Reusable image-mask dataset class and DataLoader check   | Done       |
 | Classical CV baseline         | Traditional image-processing defect-detection pipeline   | Planned    |
 | U-Net segmentation model      | Deep-learning semantic segmentation of defects           | Planned    |
 | Evaluation & error analysis   | Metrics (IoU, Dice), confusion matrices, per-sample QA   | Planned    |
@@ -47,7 +48,7 @@ split is kept unchanged.
 
 ## Current Progress
 
-Four data preparation and analysis scripts have been implemented:
+Five data inspection, analysis, and preparation scripts have been implemented:
 
 | Script                          | Purpose                                                              |
 |---------------------------------|----------------------------------------------------------------------|
@@ -55,10 +56,24 @@ Four data preparation and analysis scripts have been implemented:
 | `scripts/visualize_samples.py`  | Generate triplet figures for selected defective samples              |
 | `scripts/analyze_defect_area.py`| Compute per-defect pixel counts, ratios, and histograms              |
 | `scripts/prepare_dataset.py`    | Build processed train/val/test directories with stratified split     |
+| `scripts/inspect_processed_shapes.py` | Verify processed image-mask pairing, shape consistency, and channels |
 
 The scripts are self-contained and use lightweight dependencies such as
 `pathlib`, `cv2`, `numpy`, and `matplotlib` where needed. They include error
 handling for missing directories, unreadable files, and insufficient samples.
+
+### PyTorch Dataset Layer
+
+- `datasets/ksdd2_dataset.py` has been implemented.
+- It loads processed image-mask pairs, converts BGR images to RGB, resizes
+  samples to 640 × 256, normalises images to [0, 1], binarises masks to
+  {0, 1}, and returns PyTorch tensors.
+- Dataset output shape has been verified as:
+  - image: `[3, 640, 256]`
+  - mask: `[1, 640, 256]`
+- DataLoader batching has also been verified:
+  - images: `[4, 3, 640, 256]`
+  - masks: `[4, 1, 640, 256]`
 
 ## Preliminary Data Findings
 
@@ -95,7 +110,8 @@ handling for missing directories, unreadable files, and insufficient samples.
 │       └── test/
 │           ├── images/
 │           └── masks/
-├── datasets/              # Future: PyTorch Dataset classes
+├── datasets/              # PyTorch dataset loaders
+│   └── ksdd2_dataset.py
 ├── docs/                  # Documentation
 ├── losses/                # Future: custom loss functions
 ├── models/                # Future: model definitions
@@ -107,7 +123,8 @@ handling for missing directories, unreadable files, and insufficient samples.
 │   ├── inspect_dataset.py
 │   ├── visualize_samples.py
 │   ├── analyze_defect_area.py
-│   └── prepare_dataset.py
+│   ├── prepare_dataset.py
+│   └── inspect_processed_shapes.py
 ├── utils/                 # Future: utility helpers
 ├── requirements.txt
 └── README.md
@@ -119,8 +136,8 @@ handling for missing directories, unreadable files, and insufficient samples.
 pip install -r requirements.txt
 ```
 
-The project targets **Python 3.11**.  Core dependencies are `numpy`,
-`opencv-python`, and `matplotlib`.
+The project targets **Python 3.11**.  Core dependencies currently include `numpy`, `opencv-python`, `matplotlib`,
+`torch`, and `torchvision`.
 
 ## Current Usage
 
@@ -136,6 +153,12 @@ python scripts/analyze_defect_area.py
 
 # Prepare processed train/val/test directories
 python scripts/prepare_dataset.py
+
+# Verify processed image-mask pairing, shapes, and channels
+python scripts/inspect_processed_shapes.py
 ```
 
 Output figures are written under `outputs/figures/`.
+
+A basic DataLoader sanity check has confirmed that batches can be assembled as
+`[B, 3, 640, 256]` images and `[B, 1, 640, 256]` masks.
