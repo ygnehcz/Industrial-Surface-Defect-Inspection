@@ -6,8 +6,8 @@ goal is to develop a portfolio-grade pipeline that covers the full defect
 inspection workflow — from data understanding and classical baselines through
 deep-learning segmentation to evaluation and interactive visualisation.
 
-> **Current status:** data preparation and PyTorch input pipeline completed.
-> Model training has not started yet.
+> **Current status:** first U-Net baseline training and validation analysis completed.
+> Further optimisation and final test-set evaluation are still pending.
 
 ## Planned Pipeline
 
@@ -22,6 +22,9 @@ deep-learning segmentation to evaluation and interactive visualisation.
 | U-Net segmentation model      | Baseline encoder-decoder segmentation network with skip connections | Done       |
 | Segmentation losses           | Dice loss and combined BCE-Dice loss for binary defect segmentation | Done       |
 | Segmentation metrics          | Dice, IoU, pixel precision, and pixel recall for binary defect segmentation | Done       |
+| Training pipeline             | Train/validation loop, checkpoint saving, and baseline U-Net optimisation | Done       |
+| Prediction visualisation      | Qualitative panels for validation-set defect predictions  | Done       |
+| Threshold sweep analysis      | Validation-set threshold comparison for Dice/IoU/precision/recall trade-offs | Done       |
 | Evaluation & error analysis   | Metrics (IoU, Dice), confusion matrices, per-sample QA   | Planned    |
 | Interactive demo              | Web-based or CLI demo for live inference on user images  | Planned    |
 
@@ -117,6 +120,53 @@ handling for missing directories, unreadable files, and insufficient samples.
 - A self-test has confirmed that the metrics run successfully on tensors
   shaped `[B, 1, 640, 256]`.
 
+### Baseline Training Pipeline
+
+- `train.py` has been implemented.
+- It combines the processed dataset, U-Net, BCE-Dice loss, validation
+  metrics, and best-checkpoint saving.
+- The first baseline run used:
+  - 5 epochs
+  - batch size 2
+  - learning rate 1e-3
+  - Adam optimiser
+  - validation checkpointing by Dice score
+- The best checkpoint was saved at epoch 4 with:
+  - Val Dice: `0.3047`
+  - Val IoU: `0.1797`
+  - Val Precision: `0.4321`
+  - Val Recall: `0.2353`
+
+### Prediction Visualisation
+
+- `scripts/visualize_predictions.py` has been implemented.
+- It loads the best checkpoint and produces four-panel validation examples:
+  - original image
+  - GT mask
+  - predicted binary mask
+  - red prediction overlay
+- Initial visual inspection shows that the baseline U-Net can localise
+  several defect regions, but predicted masks are often fragmented and
+  under-cover the full ground-truth area.
+
+### Threshold Sweep Analysis
+
+- `scripts/evaluate_thresholds.py` has been implemented.
+- It evaluates thresholds `0.1` to `0.7` on the full validation split using
+  globally accumulated TP/FP/FN counts.
+- The current best validation Dice is achieved at threshold `0.7`:
+
+  | Threshold | Dice   | IoU    | Precision | Recall |
+  |-----------|--------|--------|-----------|--------|
+  | 0.50      | 0.3047 | 0.1797 | 0.4321    | 0.2353 |
+  | 0.60      | 0.3133 | 0.1857 | 0.5023    | 0.2276 |
+  | 0.70      | 0.3198 | 0.1903 | 0.5908    | 0.2192 |
+
+- This indicates that low-confidence predictions currently introduce more
+  false positives than useful defect coverage.  Further optimisation should
+  focus on improving model quality and recall rather than simply lowering
+  the threshold.
+
 ## Preliminary Data Findings
 
 - **Class imbalance** — normal samples outnumber defective samples roughly
@@ -138,6 +188,7 @@ handling for missing directories, unreadable files, and insufficient samples.
 .
 ├── classical_cv/          # Future: classical CV baseline code
 ├── configs/               # Future: configuration files
+├── train.py               # First U-Net baseline training script
 ├── data/                  # Raw and processed data
 │   ├── raw/
 │   │   ├── train/         # 2,331 images and 2,331 masks
@@ -168,7 +219,9 @@ handling for missing directories, unreadable files, and insufficient samples.
 │   ├── visualize_samples.py
 │   ├── analyze_defect_area.py
 │   ├── prepare_dataset.py
-│   └── inspect_processed_shapes.py
+│   ├── inspect_processed_shapes.py
+│   ├── visualize_predictions.py
+│   └── evaluate_thresholds.py
 ├── utils/                 # Evaluation utilities
 │   └── metrics.py
 ├── requirements.txt
@@ -210,6 +263,15 @@ python losses/segmentation_loss.py
 
 # Run segmentation-metrics self-test
 python utils/metrics.py
+
+# Train the first U-Net baseline
+python train.py
+
+# Visualise validation predictions from the best checkpoint
+python scripts/visualize_predictions.py
+
+# Sweep validation thresholds
+python scripts/evaluate_thresholds.py
 ```
 
 Output figures are written under `outputs/figures/`.
