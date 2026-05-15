@@ -16,6 +16,7 @@ deep-learning segmentation to evaluation and interactive visualisation.
 | Dataset inspection            | Per-split sample counts; defective / normal statistics   | Done       |
 | Defect sample visualisation   | Triplet figures (original, GT mask, overlay)             | Done       |
 | Defect area analysis          | Pixel-level defect distribution & histograms             | Done       |
+| Dataset preparation           | Stratified train/val split & processed directory layout  | Done       |
 | Classical CV baseline         | Traditional image-processing defect-detection pipeline   | Planned    |
 | U-Net segmentation model      | Deep-learning semantic segmentation of defects           | Planned    |
 | Evaluation & error analysis   | Metrics (IoU, Dice), confusion matrices, per-sample QA   | Planned    |
@@ -32,19 +33,32 @@ pixel-level defect annotations.
 | Test    | 1,004         | 110       | 894    |
 | **All** | **3,335**     | **356**   | **2,979** |
 
+## Processed Dataset Split
+
+The official training split is further divided into train and validation
+subsets using a fixed-seed stratified 80/20 split, while the official test
+split is kept unchanged.
+
+| Split  | Total Samples | Defective | Normal |
+|--------|---------------|-----------|--------|
+| Train  | 1,865         | 197       | 1,668  |
+| Val    | 466           | 49        | 417    |
+| Test   | 1,004         | 110       | 894    |
+
 ## Current Progress
 
-Three analysis scripts have been implemented:
+Four data preparation and analysis scripts have been implemented:
 
-| Script                          | Purpose                                                   |
-|---------------------------------|-----------------------------------------------------------|
-| `scripts/inspect_dataset.py`    | Count masks per split and classify defective vs. normal   |
-| `scripts/visualize_samples.py`  | Generate triplet figures for selected defective samples   |
-| `scripts/analyze_defect_area.py`| Compute per-defect pixel counts, ratios, and histograms   |
+| Script                          | Purpose                                                              |
+|---------------------------------|----------------------------------------------------------------------|
+| `scripts/inspect_dataset.py`    | Count masks per split and classify defective vs. normal              |
+| `scripts/visualize_samples.py`  | Generate triplet figures for selected defective samples              |
+| `scripts/analyze_defect_area.py`| Compute per-defect pixel counts, ratios, and histograms              |
+| `scripts/prepare_dataset.py`    | Build processed train/val/test directories with stratified split     |
 
-All scripts are self-contained, use `pathlib` / `cv2` / `numpy` / `matplotlib`,
-and include error handling for missing directories, unreadable files, and
-insufficient samples.
+The scripts are self-contained and use lightweight dependencies such as
+`pathlib`, `cv2`, `numpy`, and `matplotlib` where needed. They include error
+handling for missing directories, unreadable files, and insufficient samples.
 
 ## Preliminary Data Findings
 
@@ -68,9 +82,19 @@ insufficient samples.
 ├── classical_cv/          # Future: classical CV baseline code
 ├── configs/               # Future: configuration files
 ├── data/                  # Raw and processed data
-│   └── raw/
-│       ├── train/         # 2,331 images and 2,331 masks
-│       └── test/          # 1,004 images and 1,004 masks
+│   ├── raw/
+│   │   ├── train/         # 2,331 images and 2,331 masks
+│   │   └── test/          # 1,004 images and 1,004 masks
+│   └── processed/
+│       ├── train/
+│       │   ├── images/
+│       │   └── masks/
+│       ├── val/
+│       │   ├── images/
+│       │   └── masks/
+│       └── test/
+│           ├── images/
+│           └── masks/
 ├── datasets/              # Future: PyTorch Dataset classes
 ├── docs/                  # Documentation
 ├── losses/                # Future: custom loss functions
@@ -79,10 +103,11 @@ insufficient samples.
 │   ├── figures/
 │   │   ├── dataset_samples/
 │   │   └── defect_area_analysis/
-├── scripts/               # Data analysis scripts (current phase)
+├── scripts/               # Data inspection, analysis, and preparation scripts
 │   ├── inspect_dataset.py
 │   ├── visualize_samples.py
-│   └── analyze_defect_area.py
+│   ├── analyze_defect_area.py
+│   └── prepare_dataset.py
 ├── utils/                 # Future: utility helpers
 ├── requirements.txt
 └── README.md
@@ -108,6 +133,9 @@ python scripts/visualize_samples.py --split train --num-samples 6
 
 # Defect-area distribution statistics and histograms
 python scripts/analyze_defect_area.py
+
+# Prepare processed train/val/test directories
+python scripts/prepare_dataset.py
 ```
 
 Output figures are written under `outputs/figures/`.
