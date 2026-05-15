@@ -6,8 +6,8 @@ goal is to develop a portfolio-grade pipeline that covers the full defect
 inspection workflow — from data understanding and classical baselines through
 deep-learning segmentation to evaluation and interactive visualisation.
 
-> **Current status:** baseline U-Net training, validation error analysis, and fixed-threshold test-set evaluation completed.
-> Further optimisation and deployment work are still pending.
+> **Current status:** baseline U-Net training, validation error analysis, fixed-threshold test-set evaluation, and single-image inference workflow completed.
+> Further optimisation and richer deployment work are still pending.
 
 ## Planned Pipeline
 
@@ -29,7 +29,8 @@ deep-learning segmentation to evaluation and interactive visualisation.
 | Area-performance analysis     | Relating GT defect area to Dice/Recall behaviour across validation samples | Done       |
 | Boundary-performance analysis | Comparing boundary-touching and non-boundary defect segmentation quality | Done       |
 | Test-set evaluation           | Fixed-threshold final evaluation on the official test split | Done       |
-| Interactive demo              | Web-based or CLI demo for live inference on user images  | Planned    |
+| Single-image inference        | CLI workflow for predicting masks and overlays on user-supplied images | Done |
+| Interactive demo              | Richer web-based or interactive inference interface       | Planned    |
 
 ## Dataset Overview
 
@@ -241,6 +242,28 @@ handling for missing directories, unreadable files, and insufficient samples.
 - The test-set precision and recall are closely balanced, and the final Dice
   exceeds the validation Dice obtained during threshold selection.
 
+### Single-image Inference Workflow
+
+- `scripts/predict_single_image.py` has been implemented.
+- It provides a practical CLI entry point for running the selected best
+  checkpoint on an arbitrary input image.
+- The workflow applies the same RGB conversion, resizing, normalisation, and
+  thresholded segmentation inference used by the evaluation pipeline.
+- For each input image, it saves:
+  - predicted binary mask
+  - red overlay visualisation
+  - three-panel prediction figure
+- It also prints:
+  - predicted positive pixel count
+  - whether a defect is detected
+
+```bash
+python scripts/predict_single_image.py --image data/processed/test/images/20099.png
+```
+
+- In a verified example on `20099.png`, the script detected a defect and
+  produced the corresponding mask, overlay, and visualisation panel.
+
 ### Qualitative Test-set Examples
 
 - The following examples visualise predictions from the selected best
@@ -327,6 +350,7 @@ handling for missing directories, unreadable files, and insufficient samples.
 │   ├── analyze_area_vs_performance.py
 │   ├── analyze_boundary_vs_performance.py
 │   ├── visualize_test_predictions.py
+│   ├── predict_single_image.py
 │   └── evaluate_test_set.py
 ├── utils/                 # Evaluation utilities
 │   └── metrics.py
@@ -393,6 +417,9 @@ python scripts/evaluate_test_set.py
 
 # Visualise qualitative predictions on selected defective test samples
 python scripts/visualize_test_predictions.py
+
+# Run single-image inference and export mask / overlay outputs
+python scripts/predict_single_image.py --image data/processed/test/images/20099.png
 ```
 
 Output figures are written under `outputs/figures/`.
