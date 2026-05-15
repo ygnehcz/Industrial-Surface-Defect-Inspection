@@ -25,7 +25,7 @@ VAL_DIR = "data/processed/val"
 OUTPUT_DIR = "outputs/checkpoints"
 
 IMAGE_SIZE = (640, 256)  # (H, W)
-EPOCHS = 5
+EPOCHS = 20
 BATCH_SIZE = 2
 LEARNING_RATE = 1e-3
 NUM_WORKERS = 0
