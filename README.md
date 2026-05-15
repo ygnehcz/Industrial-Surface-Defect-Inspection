@@ -20,6 +20,7 @@ deep-learning segmentation to evaluation and interactive visualisation.
 | PyTorch dataset loader        | Reusable image-mask dataset class and DataLoader check   | Done       |
 | Classical CV baseline         | Traditional image-processing defect-detection pipeline   | Planned    |
 | U-Net segmentation model      | Baseline encoder-decoder segmentation network with skip connections | Done       |
+| Segmentation losses           | Dice loss and combined BCE-Dice loss for binary defect segmentation | Done       |
 | Evaluation & error analysis   | Metrics (IoU, Dice), confusion matrices, per-sample QA   | Planned    |
 | Interactive demo              | Web-based or CLI demo for live inference on user images  | Planned    |
 
@@ -87,6 +88,19 @@ handling for missing directories, unreadable files, and insufficient samples.
 - The output is raw logits without sigmoid, so sigmoid or loss functions such
   as `BCEWithLogitsLoss` will be applied later in training/inference logic.
 
+### Segmentation Losses
+
+- `losses/segmentation_loss.py` has been implemented.
+- It provides:
+  - `DiceLoss`
+  - `BCEDiceLoss`
+- `DiceLoss` computes region-overlap supervision from sigmoid probabilities.
+- `BCEDiceLoss` combines pixel-wise binary cross-entropy with region-level
+  Dice supervision.
+- The current baseline uses equal weights for BCE and Dice terms by default.
+- A self-test has confirmed that both loss functions run successfully on
+  tensors shaped `[B, 1, 640, 256]`.
+
 ## Preliminary Data Findings
 
 - **Class imbalance** — normal samples outnumber defective samples roughly
@@ -125,7 +139,8 @@ handling for missing directories, unreadable files, and insufficient samples.
 ├── datasets/              # PyTorch dataset loaders
 │   └── ksdd2_dataset.py
 ├── docs/                  # Documentation
-├── losses/                # Future: custom loss functions
+├── losses/                # Segmentation loss functions
+│   └── segmentation_loss.py
 ├── models/                # Segmentation model definitions
 │   └── unet.py
 ├── outputs/               # Generated figures and analysis results
@@ -172,6 +187,9 @@ python scripts/inspect_processed_shapes.py
 
 # Run U-Net forward-pass self-test
 python models/unet.py
+
+# Run segmentation-loss self-test
+python losses/segmentation_loss.py
 ```
 
 Output figures are written under `outputs/figures/`.
