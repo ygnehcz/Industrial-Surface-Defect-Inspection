@@ -19,7 +19,7 @@ deep-learning segmentation to evaluation and interactive visualisation.
 | Dataset preparation           | Stratified train/val split & processed directory layout  | Done       |
 | PyTorch dataset loader        | Reusable image-mask dataset class and DataLoader check   | Done       |
 | Classical CV baseline         | Traditional image-processing defect-detection pipeline   | Planned    |
-| U-Net segmentation model      | Deep-learning semantic segmentation of defects           | Planned    |
+| U-Net segmentation model      | Baseline encoder-decoder segmentation network with skip connections | Done       |
 | Evaluation & error analysis   | Metrics (IoU, Dice), confusion matrices, per-sample QA   | Planned    |
 | Interactive demo              | Web-based or CLI demo for live inference on user images  | Planned    |
 
@@ -75,6 +75,18 @@ handling for missing directories, unreadable files, and insufficient samples.
   - images: `[4, 3, 640, 256]`
   - masks: `[4, 1, 640, 256]`
 
+### Baseline U-Net Model
+
+- `models/unet.py` has been implemented as the first segmentation baseline.
+- The model uses a standard encoder-decoder U-Net structure with skip
+  connections.
+- It accepts RGB image batches shaped `[B, 3, 640, 256]`.
+- It outputs single-channel segmentation logits shaped `[B, 1, 640, 256]`.
+- A forward-pass self-test has been completed successfully.
+- The current baseline configuration contains 7,763,041 trainable parameters.
+- The output is raw logits without sigmoid, so sigmoid or loss functions such
+  as `BCEWithLogitsLoss` will be applied later in training/inference logic.
+
 ## Preliminary Data Findings
 
 - **Class imbalance** — normal samples outnumber defective samples roughly
@@ -114,7 +126,8 @@ handling for missing directories, unreadable files, and insufficient samples.
 │   └── ksdd2_dataset.py
 ├── docs/                  # Documentation
 ├── losses/                # Future: custom loss functions
-├── models/                # Future: model definitions
+├── models/                # Segmentation model definitions
+│   └── unet.py
 ├── outputs/               # Generated figures and analysis results
 │   ├── figures/
 │   │   ├── dataset_samples/
@@ -156,6 +169,9 @@ python scripts/prepare_dataset.py
 
 # Verify processed image-mask pairing, shapes, and channels
 python scripts/inspect_processed_shapes.py
+
+# Run U-Net forward-pass self-test
+python models/unet.py
 ```
 
 Output figures are written under `outputs/figures/`.
