@@ -6,6 +6,7 @@ samples from the validation set, and saves 4-column prediction panels.
 
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -34,6 +35,17 @@ OVERLAY_ALPHA = 0.45
 # Main
 # ---------------------------------------------------------------------------
 def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Visualise U-Net predictions on defective validation samples."
+    )
+    parser.add_argument(
+        "--threshold",
+        type=float,
+        default=None,
+        help="Binarisation threshold (overrides checkpoint config).",
+    )
+    args = parser.parse_args()
+
     # ---- Device ----
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
@@ -47,7 +59,9 @@ def main() -> None:
     checkpoint = torch.load(ckpt_path, map_location=device, weights_only=False)
     config = checkpoint.get("config", {})
     image_size = config.get("image_size", (640, 256))
-    threshold = config.get("threshold", DEFAULT_THRESHOLD)
+    threshold = args.threshold if args.threshold is not None else config.get(
+        "threshold", DEFAULT_THRESHOLD
+    )
 
     print(f"Checkpoint: {ckpt_path}")
     print(f"Threshold:  {threshold}")

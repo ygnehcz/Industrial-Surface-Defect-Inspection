@@ -7,6 +7,7 @@ median / worst visualisation panels plus a CSV metrics table.
 
 from __future__ import annotations
 
+import argparse
 import csv
 import sys
 from pathlib import Path
@@ -110,6 +111,17 @@ def save_panel(
 # Main
 # ---------------------------------------------------------------------------
 def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Per-sample error analysis on validation defective samples."
+    )
+    parser.add_argument(
+        "--threshold",
+        type=float,
+        default=None,
+        help="Binarisation threshold (overrides checkpoint config).",
+    )
+    args = parser.parse_args()
+
     # ---- Device ----
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
@@ -126,7 +138,9 @@ def main() -> None:
     checkpoint = torch.load(ckpt_path, map_location=device, weights_only=False)
     config = checkpoint.get("config", {})
     image_size = config.get("image_size", (640, 256))
-    threshold = config.get("threshold", DEFAULT_THRESHOLD)
+    threshold = args.threshold if args.threshold is not None else config.get(
+        "threshold", DEFAULT_THRESHOLD
+    )
 
     print(f"Checkpoint: {ckpt_path}")
     print(f"Threshold:  {threshold}")
